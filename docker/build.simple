@@ -1,0 +1,2 @@
+#!/bin/bash
+docker build --progress=plain -f ./Dockerfile --tag herrminator/ice-launcher:latest ..

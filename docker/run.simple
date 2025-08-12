@@ -1,0 +1,7 @@
+#!/bin/bash
+[ -z "$1" ] && echo "Usage: run.simple <config file>" && exit 4
+
+docker run -it --rm \
+    -v "$1:/etc/ice_launcher.conf:ro" \
+    -p "9854:9854" \
+    herrminator/ice-launcher

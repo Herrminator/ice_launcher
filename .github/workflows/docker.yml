@@ -1,0 +1,57 @@
+name: Docker Build
+
+on:
+  push:
+    branches:
+      - "main"
+    paths-ignore:
+      - ".github/**"
+  workflow_dispatch:
+
+env: # for scripts
+  ice_version_tag: "0.1" # TODO: get from tags / release / whatever
+  ice_minor_version_tag: "0.1.0b1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+     #- name: Login to Docker Hub
+     #  uses: docker/login-action@v3
+     #  with:
+     #    username: ${{ secrets.DOCKER_HUB_USERNAME }}
+     #    password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set repository as lower case owner name
+        # https://github.com/orgs/community/discussions/27086#discussioncomment-3254548
+        run: |
+          echo "repo_name=${repo_owner,,}" >>${GITHUB_ENV}
+        env:
+          repo_owner: '${{ github.repository_owner }}'
+
+      - name: Build and push base image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          file: ./Dockerfile
+          push: true
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+             ghcr.io/${{ env.repo_name }}/ice-launcher:latest
+             ghcr.io/${{ env.repo_name }}/ice-launcher:${{ env.ice_version_tag }}
+             ghcr.io/${{ env.repo_name }}/ice-launcher:${{ env.ice_minor_version_tag }}
