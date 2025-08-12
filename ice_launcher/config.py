@@ -3,8 +3,9 @@
 # Copyright Jeremy Sanders (2023)
 # Released under the MIT Licence
 
-import configparser
+import configparser, copy, logging
 import os.path
+from typing import Optional
 
 class Option:
     '''Define option in configuration file.
@@ -68,6 +69,7 @@ mount_opts = [
     Option('genre'),
     Option('public', default=False),
     Option("meta", default=False, dtype="bool"),
+    Option("dynamic", default=False, dtype="bool"),
 ]
 
 class Config:
@@ -111,3 +113,18 @@ class Config:
                     raise RuntimeError('Mode "%s" is unknown' % mode)
                 if not self.mounts[mount]['input']:
                     raise RuntimeError('No input given for mount "%s"' % mount)
+
+    def find_dynamic_mount_config(self, mount: str) -> Optional[dict[str, Option]]:
+        if mount in self.mounts:
+            return self.mounts[mount]
+        for cfmnt, conf in self.mounts.items():
+            if conf["dynamic"] and mount.startswith(cfmnt):
+                path = mount.replace(cfmnt, "", 1)
+                neew = copy.deepcopy(conf)
+                neew["name"]  = conf["name"].format(path=path)
+                neew["input"] = conf["input"].format(path=path)
+                neew["dynamic"] = None
+                self.mounts[mount] = neew
+                logging.debug(f"Found dynamic mount point for '{mount}'. Input is '{neew['input']}'")
+                return neew
+        

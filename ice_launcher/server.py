@@ -25,6 +25,11 @@ class LauncherHTTPServer(HTTPServer):
         # this maps mounts to Popen processes
         self.mount_processes = {}
 
+    def add_dynamic_mount(self, mount, conf):
+        self.mount_locks[mount] = threading.Lock()
+        self.mount_clients[mount] = set()
+        conf["dynamic"] = False
+
 class HTTPHandler(BaseHTTPRequestHandler):
     server: LauncherHTTPServer # type: ignore # for now...
 
@@ -81,9 +86,13 @@ class HTTPHandler(BaseHTTPRequestHandler):
         mount = params['mount'].lstrip('/')
         client = params['client']
 
-        if mount not in self.server.conf.mounts:
+        conf = self.server.conf.find_dynamic_mount_config(mount)
+        if conf is None:
             logging.info('unknown mount "%s" for listener_remove, so ignoring' % mount)
             return
+
+        if conf["dynamic"] is None:
+            self.server.add_dynamic_mount(mount, conf)
 
         with self.server.mount_locks[mount]:
             if client in self.server.mount_clients[mount]:
