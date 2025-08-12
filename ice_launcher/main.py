@@ -3,6 +3,8 @@
 # Copyright Jeremy Sanders (2023)
 # Released under the MIT Licence
 
+__version__ = "0.1.0b1"
+
 import argparse
 import logging
 

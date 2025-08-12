@@ -8,7 +8,7 @@ import urllib.parse
 import logging
 import threading
 
-from . import sources
+from . import sources, metadata
 
 class LauncherHTTPServer(HTTPServer):
     def __init__(self, conf, *args, **argsv):
@@ -26,6 +26,7 @@ class LauncherHTTPServer(HTTPServer):
         self.mount_processes = {}
 
 class HTTPHandler(BaseHTTPRequestHandler):
+    server: LauncherHTTPServer # type: ignore # for now...
 
     def send_positive_response(self):
         """Tell icecast that it's ok to server the material."""
@@ -50,9 +51,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
         logging.info('stopping source for mount "%s"' % mount)
         popen = self.server.mount_processes[mount]
         del self.server.mount_processes[mount]
-        popen.terminate()
-        popen.wait()
-        logging.info('successfully stopped ffmpeg for mount "%s"' % mount)
+        sources.stop_source(popen, mount, self.server.conf)
 
     def listener_add(self, params):
         """Handle action listener_add from icecast."""
@@ -178,5 +177,6 @@ def run_server(conf):
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
+    metadata.remove_all_updater(conf)
     httpd.server_close()
     logging.info('Stopping icecast launcher server')

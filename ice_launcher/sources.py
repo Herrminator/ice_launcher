@@ -6,6 +6,7 @@
 import subprocess
 import time
 import logging
+from . import metadata
 
 class IceLaunchError(RuntimeError):
     """Exception for problems launching the process."""
@@ -82,7 +83,16 @@ def start_source(mount, conf):
             'ffmpeg process for mount "%s" died after starting' % mount)
         raise IceLaunchError('ffmpeg process failed to start')
 
+    metadata.add_updater(mount, conf)
+
     return popen
+
+def stop_source(popen, mount, conf):
+    """Start source for mount given."""
+    metadata.remove_updater(mount, conf)
+    popen.terminate()
+    popen.wait()
+    logging.info('successfully stopped ffmpeg for mount "%s"' % mount)
 
 def get_options_mode_copy_aac(mount, conf):
     """Specific options for copy_aac mode."""

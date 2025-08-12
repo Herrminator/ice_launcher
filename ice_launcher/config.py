@@ -43,6 +43,8 @@ main_opts = [
     Option('icecast_port', default=8000, dtype='int'),
     Option('icecast_user', default='source'),
     Option('icecast_password', default='password'),
+    Option('icecast_admin', default='admin'),
+    Option('icecast_admin_password', default='password'),
     Option('icecast_forbid_status', default=False, dtype='bool'),
     Option('legacy_icecast', default=False, dtype='bool'),
 
@@ -65,6 +67,7 @@ mount_opts = [
     Option('description'),
     Option('genre'),
     Option('public', default=False),
+    Option("meta", default=False, dtype="bool"),
 ]
 
 class Config:
