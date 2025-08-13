@@ -24,11 +24,13 @@ class LauncherHTTPServer(HTTPServer):
         self.mount_clients = {m: set() for m in conf.mounts}
         # this maps mounts to Popen processes
         self.mount_processes = {}
+        self.global_lock = threading.Lock()
 
     def add_dynamic_mount(self, mount, conf):
-        self.mount_locks[mount] = threading.Lock()
-        self.mount_clients[mount] = set()
-        conf["dynamic"] = False
+        with self.global_lock:
+            self.mount_locks[mount] = threading.Lock()
+            self.mount_clients[mount] = set()
+            conf["dynamic"] = False
 
 class HTTPHandler(BaseHTTPRequestHandler):
     server: LauncherHTTPServer # type: ignore # for now...
