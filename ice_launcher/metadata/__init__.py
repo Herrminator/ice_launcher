@@ -20,7 +20,16 @@ class Updater(threading.Thread):
         self.last = None
         self.stopping = threading.Event()
     
-    def update(self, meta: dict[Any, Any]) -> None:
+    def update(self) -> None:
+        try:
+            meta = streammeta.get_meta(url=self.stream, skip_meta=SKIP_ADV)
+            if meta is None:
+                logging.debug(f"No metadata returned for {self.mount}")
+                return
+        except Exception as exc:
+            logging.error(f"Error reading stream metadata: {exc}", exc_info=True)
+            return
+
         if meta.get("StreamTitle") is None:
             logging.warning(f"No usable metadata for {self.mount} in {meta}")
             return
@@ -39,15 +48,9 @@ class Updater(threading.Thread):
             logging.error(f"Error updating metadata for {self.mount}: {exc}", exc_info=True)
 
     def run(self) -> None:
+        self.update()
         while not self.stopping.wait(10.0):
-            try:
-                meta = streammeta.get_meta(url=self.stream, skip_meta=SKIP_ADV)
-                if meta is not None:
-                    self.update(meta)
-                else:
-                    logging.debug(f"No metadata returned for {self.mount}")
-            except Exception as exc:
-                logging.error(f"Error reading stream metadata: {exc}", exc_info=True)
+            self.update()
 
         logging.debug(f"Metadata updater for {self.mount} stopping.")
 
