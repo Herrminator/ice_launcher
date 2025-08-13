@@ -3,7 +3,7 @@
 # Copyright Jeremy Sanders (2023)
 # Released under the MIT Licence
 
-import configparser, copy, logging
+import configparser, copy, re, logging
 import os.path
 from typing import Optional
 
@@ -119,10 +119,12 @@ class Config:
             return self.mounts[mount]
         for cfmnt, conf in self.mounts.items():
             if conf["dynamic"] and mount.startswith(cfmnt):
-                path = mount.replace(cfmnt, "", 1)
                 neew = copy.deepcopy(conf)
-                neew["name"]  = conf["name"].format(path=path)
-                neew["input"] = conf["input"].format(path=path)
+                path = mount.replace(cfmnt, "", 1)
+                pretty_path = re.sub(r'[.+-/]', " ", path).title()
+                neew["name"]  = conf["name"].format(path=path, pretty_path=pretty_path)
+                neew["input"] = conf["input"].format(path=path, pretty_path=pretty_path)
+                neew["genre"] = conf["genre"].format(path=path, pretty_path=pretty_path)
                 neew["dynamic"] = None
                 self.mounts[mount] = neew
                 logging.debug(f"Found dynamic mount point for '{mount}'. Input is '{neew['input']}'")
