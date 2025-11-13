@@ -44,7 +44,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
+          # Removed due to `deno`-requirement in base images ;( : linux/arm/v7
           file: docker/Dockerfile
           push: true
           provenance: mode=max
