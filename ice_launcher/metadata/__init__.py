@@ -11,6 +11,8 @@ SKIP_ADV     = ('adw_ad', 'true')
 SKIP_ADV     = ("StreamTitle", re.compile(r"^(RADIO BOB|Bayern).*", re.I))
 
 class Updater(threading.Thread):
+    MAX_ERRORS = 32
+
     def __init__(self, mount: str, conf: config.Config) -> None:
         super().__init__()
         self.mount  = mount
@@ -18,6 +20,7 @@ class Updater(threading.Thread):
         self.update_url = UPDATE_URL.format(host=conf.main["icecast_host"], port=conf.main["icecast_port"])
         self.auth = (conf.main["icecast_admin"], conf.main["icecast_admin_password"])
         self.last = None
+        self.errcnt = 0
         self.stopping = threading.Event()
     
     def update(self) -> None:
@@ -46,11 +49,15 @@ class Updater(threading.Thread):
             self.last = val
         except Exception as exc:
             logging.error(f"Error updating metadata for {self.mount}: {exc}", exc_info=True)
+            self.errcnt += 1
 
     def run(self) -> None:
         self.update()
         while not self.stopping.wait(10.0):
             self.update()
+            if self.errcnt >= self.MAX_ERRORS:
+                logging.error(f"Metadata updater for {self.mount} stopping after {self.errcnt} errors.")
+                break
 
         logging.debug(f"Metadata updater for {self.mount} stopping.")
 
@@ -82,7 +89,7 @@ def remove_updater(mount, conf):
     logging.info(f"Metadata updater for {mount} stopped.")
 
 def remove_all_updater(conf):
-    logging.debug(f"Removing all remaing metada updaters")
-    for mount in list(updaters.keys()):
+    logging.debug("Removing all remaing metada updaters")
+    for mount in updaters.keys():
         remove_updater(mount, conf)
 

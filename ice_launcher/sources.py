@@ -70,8 +70,8 @@ def start_source(mount, conf):
     # start ffmpeg process
     try:
         popen = subprocess.Popen(cmd)
-    except Exception:
-        logging.error('ffmpeg process for mount "%s" did not start' % mount)
+    except Exception as exc:
+        logging.error('ffmpeg process for mount "%s" did not start: %r' % (mount, exc))
         raise IceLaunchError('ffmpeg process failed to start')
 
     # wait until ffmpeg is hopefully running ok

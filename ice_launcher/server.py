@@ -33,6 +33,8 @@ class LauncherHTTPServer(HTTPServer):
             conf["dynamic"] = False
 
 class HTTPHandler(BaseHTTPRequestHandler):
+    KNOWN_UNKNOWNS = [ "server_version.xsl", "status.xsl" ]
+
     server: LauncherHTTPServer # type: ignore # for now...
 
     def send_positive_response(self):
@@ -63,13 +65,19 @@ class HTTPHandler(BaseHTTPRequestHandler):
     def listener_add(self, params):
         """Handle action listener_add from icecast."""
 
-        logging.info("listener_add " + str(params))
         mount = params['mount'].lstrip('/')
         client = params['client']
 
-        if mount not in self.server.conf.mounts:
-            logging.info('unknown mount "%s" for listener_add, so ignoring' % mount)
+        logging.log(msg="listener_add " + str(params), level=logging.INFO if mount not in self.KNOWN_UNKNOWNS else logging.DEBUG)
+
+        conf = self.server.conf.find_dynamic_mount_config(mount)
+        if conf is None:
+            logging.log(logging.INFO if mount not in self.KNOWN_UNKNOWNS else logging.DEBUG,
+                        'unknown mount "%s" for listener_add, so ignoring' % mount)
             return
+
+        if conf["dynamic"] is None:
+            self.server.add_dynamic_mount(mount, conf)
 
         with self.server.mount_locks[mount]:
             if not self.server.mount_clients[mount]:
@@ -80,17 +88,21 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 self.start_source(mount)
 
             self.server.mount_clients[mount].add(client)
+            
+            logging.debug("active clients for mount %s: %s" % (mount, str(self.server.mount_clients[mount])))
 
     def listener_remove(self, params):
         """Handle action listener_remove from icecast."""
 
-        logging.info("listener_remove " + str(params))
         mount = params['mount'].lstrip('/')
         client = params['client']
 
+        logging.log(msg="listener_remove " + str(params), level=logging.INFO if mount not in self.KNOWN_UNKNOWNS else logging.DEBUG)
+        
         conf = self.server.conf.find_dynamic_mount_config(mount)
         if conf is None:
-            logging.info('unknown mount "%s" for listener_remove, so ignoring' % mount)
+            logging.log(logging.INFO if mount not in self.KNOWN_UNKNOWNS else logging.DEBUG,
+                        'unknown mount "%s" for listener_remove, so ignoring' % mount)
             return
 
         if conf["dynamic"] is None:
@@ -102,6 +114,11 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 if not self.server.mount_clients[mount]:
                     logging.info('no more clients left for mount "%s"' % mount)
                     self.stop_source(mount)
+            else:
+                logging.debug(f"client {client} not found in mount {mount} clients")
+            if self.server.mount_clients[mount]:
+                logging.debug(f"remaining clients for mount {mount}: {self.server.mount_clients[mount]}")
+
 
     def check_user_password(self, params):
         """Check if provided user details match allowed users."""
