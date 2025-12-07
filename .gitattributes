@@ -1,0 +1,6 @@
+*             text=auto
+.*            text eol=lf
+*.sh          eol=lf
+*.env		  eol=lf
+*.ksh         eol=lf
+docker/*      text eol=lf
