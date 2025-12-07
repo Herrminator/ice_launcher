@@ -33,7 +33,7 @@ class LauncherHTTPServer(HTTPServer):
             conf["dynamic"] = False
 
 class HTTPHandler(BaseHTTPRequestHandler):
-    KNOWN_UNKNOWNS = [ "server_version.xsl", "status.xsl" ]
+    KNOWN_UNKNOWNS = [ "server_version.xsl", "status.xsl", "style.css" ]
 
     server: LauncherHTTPServer # type: ignore # for now...
 
@@ -105,6 +105,16 @@ class HTTPHandler(BaseHTTPRequestHandler):
                         'unknown mount "%s" for listener_remove, so ignoring' % mount)
             return
 
+        delay = self.server.conf.main.get('source_remove_delay')
+        if delay is not None and delay > 0:
+            logging.debug(f"delaying source removal for mount {mount}, client {client} by {delay} seconds")
+            threading.Timer(delay, self._remove_delayed, args=(mount, client, conf)).start()
+        else:
+            self._remove_delayed(mount, client, conf)
+
+    def _remove_delayed(self, mount, client, conf):
+        """ Kodi seems to connect repeatedly when starting to play.
+            So we'll try to keep the source running for a few seconds after the client was removed."""
         if conf["dynamic"] is None:
             self.server.add_dynamic_mount(mount, conf)
 

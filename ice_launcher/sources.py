@@ -88,13 +88,13 @@ def start_source(mount, conf):
     return popen
 
 def stop_source(popen, mount, conf):
-    """Start source for mount given."""
+    """Stop source for mount given."""
     metadata.remove_updater(mount, conf)
     popen.terminate()
     popen.wait()
     logging.info('successfully stopped ffmpeg for mount "%s"' % mount)
 
-def get_options_mode_copy_aac(mount, conf):
+def get_options_mode_copy_aac(mount, conf): # NOSONAR(S1172)
     """Specific options for copy_aac mode."""
     return (
         [],
@@ -105,7 +105,7 @@ def get_options_mode_copy_aac(mount, conf):
         ]
     )
 
-def get_options_mode_copy_mp3(mount, conf):
+def get_options_mode_copy_mp3(mount, conf): # NOSONAR(S1172)
     """Specific options for copy_mp3 mode."""
     return (
         ['-f', 'mp3'],

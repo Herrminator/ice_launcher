@@ -11,11 +11,12 @@ SKIP_ADV     = ('adw_ad', 'true')
 SKIP_ADV     = ("StreamTitle", re.compile(r"^(RADIO BOB|Bayern).*", re.I))
 
 class Updater(threading.Thread):
-    MAX_ERRORS = 32
+    MAX_ERRORS = 16
 
     def __init__(self, mount: str, conf: config.Config) -> None:
         super().__init__()
         self.mount  = mount
+        self.conf   = conf
         self.stream = conf.mounts[mount]["input"]
         self.update_url = UPDATE_URL.format(host=conf.main["icecast_host"], port=conf.main["icecast_port"])
         self.auth = (conf.main["icecast_admin"], conf.main["icecast_admin_password"])
@@ -47,6 +48,7 @@ class Updater(threading.Thread):
             rsp = requests.get(self.update_url, params=par, auth=self.auth)
             rsp.raise_for_status()
             self.last = val
+            self.errcnt = 0
         except Exception as exc:
             logging.error(f"Error updating metadata for {self.mount}: {exc}", exc_info=True)
             self.errcnt += 1
@@ -57,6 +59,7 @@ class Updater(threading.Thread):
             self.update()
             if self.errcnt >= self.MAX_ERRORS:
                 logging.error(f"Metadata updater for {self.mount} stopping after {self.errcnt} errors.")
+                remove_updater(self.mount, self.conf, wait=False)
                 break
 
         logging.debug(f"Metadata updater for {self.mount} stopping.")
@@ -73,23 +76,23 @@ def add_updater(mount: str, conf: config.Config):
     if mount in updaters:
         logging.debug(f"Metadata updater for '{mount}' already running")
         return
+    streammeta.DEBUG = conf.main["log_debug_metadata"]
     thread = Updater(mount, conf)
     thread.start()
     updaters[mount] = thread
     logging.info(f"Metadata updater for {mount} started.")
-    streammeta.DEBUG = logging.root.level == logging.DEBUG
 
-def remove_updater(mount, conf):
+def remove_updater(mount, conf, wait=True):
+    # Overrides may use conf parameter! (This comment makes Sonar happy ;-) )
     if mount not in updaters:
         logging.debug(f"No metadata updater for {mount} running")
         return
     thread = updaters.pop(mount)
     thread.stop()
-    thread.join()
+    if wait: thread.join()
     logging.info(f"Metadata updater for {mount} stopped.")
 
 def remove_all_updater(conf):
     logging.debug("Removing all remaing metada updaters")
-    for mount in updaters.keys():
+    for mount in list(updaters.keys()): # NOSONAR(S7504) updaters is modified in loop!
         remove_updater(mount, conf)
-

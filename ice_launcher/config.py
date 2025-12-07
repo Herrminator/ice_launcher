@@ -55,10 +55,13 @@ main_opts = [
     Option('ffmpeg_verbose', default=False, dtype='bool'),
     Option('ffmpeg_agent'),
 
+    Option('source_remove_delay', default=0, dtype='int'),
+    
     Option('log_level', default='info'),
+    Option('log_debug_metadata', default=False, dtype='bool'),
 ]
 
-allowed_modes = set(['copy_aac', 'copy_mp3'])
+allowed_modes = {'copy_aac', 'copy_mp3'}
 
 # options in [mount.X] sections
 mount_opts = [
@@ -75,7 +78,7 @@ mount_opts = [
 class Config:
     '''Define set of configuration settings read from conf file.'''
 
-    def __init__(self, filename):
+    def __init__(self, filename): # NOSONAR(S3776) "Wat mutt, dat mutt"
         conffile = configparser.ConfigParser()
         if not os.path.exists(filename):
             raise RuntimeError(
@@ -101,7 +104,7 @@ class Config:
         # read sections for each mount (called mount.X)
         self.mounts = {}
         for sect in conffile.sections():
-            if sect[:6] == 'mount.':
+            if sect.startswith('mount.'):
                 mount = sect[6:]
                 self.mounts[mount] = {}
                 for opt in mount_opts:
@@ -121,7 +124,7 @@ class Config:
             if conf["dynamic"] and mount.startswith(cfmnt):
                 neew = copy.deepcopy(conf)
                 path = mount.replace(cfmnt, "", 1)
-                pretty_path = re.sub(r'[.+-/]', " ", path).title()
+                pretty_path = re.sub(r'[-+./]', " ", path).title()
                 neew["name"]  = conf["name"].format(path=path, pretty_path=pretty_path)
                 neew["input"] = conf["input"].format(path=path, pretty_path=pretty_path)
                 neew["genre"] = conf["genre"].format(path=path, pretty_path=pretty_path)
