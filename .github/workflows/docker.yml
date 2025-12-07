@@ -10,7 +10,7 @@ on:
 
 env: # for scripts
   ice_version_tag: "0.1" # TODO: get from tags / release / whatever
-  ice_minor_version_tag: "0.1.0b3"
+  ice_minor_version_tag: "0.1.0b4"
 
 jobs:
   build:
