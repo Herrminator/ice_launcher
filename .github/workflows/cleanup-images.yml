@@ -12,6 +12,7 @@ jobs:
       - name: Delete old untagged images
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
+          packages: ice-launcher
           delete-untagged: true
           older-than: 3 months
           dry-run: true
