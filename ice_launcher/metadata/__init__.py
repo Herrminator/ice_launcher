@@ -1,13 +1,12 @@
 import re, threading, requests
-from typing import Any, Callable, Iterable, Mapping
-from . import streammeta
+from . import streammeta, api
 from .. import config
 import logging
 
 # http://admin:hackme@tjpi10:8000/admin/metadata.xsl?song=Pong%21&mount=%2Fstreams%2Ftryme.mp3&mode=updinfo&charset=UTF-8
 UPDATE_URL   = "http://{host}:{port}/admin/metadata.xsl"
 UPDATE_PARAM = { "mode": "updinfo", "charset": "UTF-8" }
-SKIP_ADV     = ('adw_ad', 'true')
+# py: SKIP_ADV     = ('adw_ad', 'true')
 SKIP_ADV     = ("StreamTitle", re.compile(r"^(RADIO BOB|Bayern).*", re.I))
 
 class Updater(threading.Thread):
@@ -82,7 +81,7 @@ def add_updater(mount: str, conf: config.Config):
     updaters[mount] = thread
     logging.info(f"Metadata updater for {mount} started.")
 
-def remove_updater(mount, conf, wait=True):
+def remove_updater(mount, _conf, wait=True):
     # Overrides may use conf parameter! (This comment makes Sonar happy ;-) )
     if mount not in updaters:
         logging.debug(f"No metadata updater for {mount} running")
@@ -93,6 +92,6 @@ def remove_updater(mount, conf, wait=True):
     logging.info(f"Metadata updater for {mount} stopped.")
 
 def remove_all_updater(conf):
-    logging.debug("Removing all remaing metada updaters")
+    logging.debug("Removing all remaining metadata updaters")
     for mount in list(updaters.keys()): # NOSONAR(S7504) updaters is modified in loop!
         remove_updater(mount, conf)

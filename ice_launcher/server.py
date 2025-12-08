@@ -8,7 +8,7 @@ import urllib.parse
 import logging
 import threading
 
-from . import sources, metadata
+from . import sources, metadata, api
 
 class LauncherHTTPServer(HTTPServer):
     def __init__(self, conf, *args, **argsv):
@@ -190,11 +190,29 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 params['action'], repr(params)))
             self.send_positive_response()
 
+    def send_status_response(self):
+        """Send icecast status response."""
+        try:
+            rsp = api.generate_status_json(self.server)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(rsp.encode('utf-8'))
+        except Exception as exc:
+            logging.error(f"Error generating status response: {exc}", exc_info=True)
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(b'Error 500: Internal server error')
+
     def do_GET(self):
         """Handle GET request.
 
         This is not needed by icecast.
         """
+        if self.path == "/api/status.json":
+            self.send_status_response()
+            return
+
         logging.info(
             'GET path: %s, headers: %s', repr(self.path), repr(self.headers))
         self.send_response(404)

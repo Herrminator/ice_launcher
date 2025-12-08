@@ -20,6 +20,7 @@ tests      = [ "coverage", "coverage-conditional-plugin" ]
 
 [project.scripts]
 ice_launcher = "ice_launcher.main:main"
+metadata-health = "ice_launcher.metadata.health:main"
 
 [project.urls]
 Repository = "https://github.com/Herrminator/ice_launcher.git"
