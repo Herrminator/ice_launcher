@@ -17,4 +17,3 @@ jobs:
           packages: ice-launcher
           delete-untagged: true
           older-than: 3 months
-          keep-n-untagged: 15
