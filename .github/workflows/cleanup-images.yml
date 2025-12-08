@@ -2,6 +2,8 @@ name: Cleanup Images
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "30 0 * * 1"
 
 jobs:
   cleanup:
@@ -15,4 +17,4 @@ jobs:
           packages: ice-launcher
           delete-untagged: true
           older-than: 3 months
-          dry-run: true
+          keep-n-untagged: 15
