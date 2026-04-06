@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "30 0 * * 1"
 
+env:
+  # TODO: REMOVEME: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
